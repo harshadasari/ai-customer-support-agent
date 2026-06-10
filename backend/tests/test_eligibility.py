@@ -122,3 +122,15 @@ def test_damaged_final_sale_over_500_escalated():
     result = check_refund_eligibility(order, CUSTOMER, now=NOW)
     assert result.decision == Decision.ESCALATED
     assert "R2" in result.rule_ids
+
+
+def test_shipped_order_denied():
+    order = _make_order(status="shipped", delivered_date=None)
+    result = check_refund_eligibility(order, CUSTOMER, now=NOW)
+    assert result.decision == Decision.DENIED
+
+
+def test_cancelled_order_denied():
+    order = _make_order(status="cancelled", delivered_date=None)
+    result = check_refund_eligibility(order, CUSTOMER, now=NOW)
+    assert result.decision == Decision.DENIED

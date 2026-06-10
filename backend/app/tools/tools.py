@@ -56,7 +56,9 @@ def issue_refund(order_id: str, customer_id: str) -> dict:
         return {"status": "REJECTED", "reason": ["Order or customer not found."]}
     result = check_refund_eligibility(order, caller)
     if result.decision.value != "APPROVED":
-        return {"status": "REJECTED", "reason": result.reasons, "rule_ids": result.rule_ids}
+        return {"status": "REJECTED", "reasons": result.reasons, "rule_ids": result.rule_ids}
+    order.refunded = True
+    order.status = "refunded"
     return {"status": "REFUNDED", "order_id": order_id, "amount": order.amount}
 
 

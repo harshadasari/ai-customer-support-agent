@@ -1,16 +1,16 @@
 import time
 from collections import defaultdict
+from contextvars import ContextVar
 from contextlib import contextmanager
 from app.models import TraceStep
 
 TRACE_STORE: dict[str, list[TraceStep]] = defaultdict(list)
 
-_current_run_id: str | None = None
+_current_run_id: ContextVar[str | None] = ContextVar("_current_run_id", default=None)
 
 
 def set_current_run(run_id: str):
-    global _current_run_id
-    _current_run_id = run_id
+    _current_run_id.set(run_id)
 
 
 @contextmanager
@@ -44,5 +44,6 @@ def trace_step(step_no: int, type_: str, name: str, input_=None):
             tokens_out=box["tokens_out"],
         )
         box["_step"] = step
-        if _current_run_id:
-            TRACE_STORE[_current_run_id].append(step)
+        run_id = _current_run_id.get()
+        if run_id:
+            TRACE_STORE[run_id].append(step)

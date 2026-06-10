@@ -26,6 +26,13 @@ def check_refund_eligibility(
             rule_ids=["R5"],
         )
 
+    if order.status != "delivered":
+        return EligibilityResult(
+            decision=Decision.DENIED,
+            reasons=[f"Order status is '{order.status}' — only delivered orders are eligible for refund."],
+            rule_ids=[],
+        )
+
     final_sale_items = [i for i in order.items if i.final_sale and not i.damaged]
     if final_sale_items:
         return EligibilityResult(

@@ -314,21 +314,21 @@ class TestTracing:
     def test_chat_returns_trace_in_response(self):
         from langchain_core.messages import AIMessage
         from app.models import TraceStep
-        from app.trace.tracer import TRACE_STORE, set_current_run
+        from app.trace.tracer import TRACE_STORE
 
-        set_current_run("trace-test-run")
-        TRACE_STORE["trace-test-run"] = [
-            TraceStep(step=0, type="llm", name="agent_call", latency_ms=100, tokens_in=50, tokens_out=30)
-        ]
+        mock_trace = TraceStep(step=0, type="llm", name="agent_call", latency_ms=100, tokens_in=50, tokens_out=30)
 
-        mock_state = {
-            "messages": [AIMessage(content="Test response")],
-            "trace": [],
-            "decision": None,
-            "run_id": "trace-test-run",
-        }
+        def fake_invoke(state):
+            TRACE_STORE["trace-test-run"].append(mock_trace)
+            return {
+                "messages": [AIMessage(content="Test response")],
+                "trace": [mock_trace],
+                "decision": None,
+                "run_id": "trace-test-run",
+            }
+
         with patch("app.main.agent_graph") as mock_graph:
-            mock_graph.invoke.return_value = mock_state
+            mock_graph.invoke.side_effect = fake_invoke
             res = client.post("/api/chat", json={"message": "test", "run_id": "trace-test-run"})
             data = res.json()
             assert len(data["trace"]) >= 1

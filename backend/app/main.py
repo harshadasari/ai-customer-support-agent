@@ -46,6 +46,8 @@ def chat(payload: ChatRequest):
         history = [SystemMessage(content=SYSTEM_PROMPT)]
     history.append(HumanMessage(content=payload.message))
 
+    TRACE_STORE.pop(run_id, None)
+
     try:
         state = agent_graph.invoke({
             "messages": history,

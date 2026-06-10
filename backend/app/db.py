@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -9,20 +10,30 @@ DATA_DIR = Path(__file__).parent.parent / "data" / "seed"
 _customers: list[Customer] = []
 _orders: list[Order] = []
 _loaded = False
+_raw_cache: dict | None = None
 
 
 def _load_data():
-    global _customers, _orders, _loaded
+    global _customers, _orders, _loaded, _raw_cache
     if _loaded:
         return
     data_file = DATA_DIR / "customers.json"
-    raw = json.loads(data_file.read_text())
-    for c in raw["customers"]:
-        orders = c.pop("orders", [])
-        _customers.append(Customer(**c))
-        for o in orders:
+    _raw_cache = json.loads(data_file.read_text())
+    _customers.clear()
+    _orders.clear()
+    for c in _raw_cache["customers"]:
+        customer_data = {k: v for k, v in c.items() if k != "orders"}
+        _customers.append(Customer(**customer_data))
+        for o in c.get("orders", []):
             _orders.append(Order(**o))
     _loaded = True
+
+
+def reload_data():
+    """Reset all data to seed state. Used by tests."""
+    global _loaded
+    _loaded = False
+    _load_data()
 
 
 def get_customer(identifier: str) -> Optional[Customer]:
