@@ -1,19 +1,22 @@
+import { CheckCircle, XCircle, AlertTriangle, HelpCircle } from "lucide-react";
+
 interface Props {
   decision: string | null;
 }
 
-const COLORS: Record<string, string> = {
-  APPROVED: "bg-green-100 text-green-800 border-green-300",
-  DENIED: "bg-red-100 text-red-800 border-red-300",
-  ESCALATED: "bg-yellow-100 text-yellow-800 border-yellow-300",
-  NEEDS_INFO: "bg-blue-100 text-blue-800 border-blue-300",
+const CONFIG: Record<string, { color: string; Icon: typeof CheckCircle }> = {
+  APPROVED: { color: "bg-emerald-50 text-emerald-700 border-emerald-200", Icon: CheckCircle },
+  DENIED: { color: "bg-red-50 text-red-700 border-red-200", Icon: XCircle },
+  ESCALATED: { color: "bg-amber-50 text-amber-700 border-amber-200", Icon: AlertTriangle },
+  NEEDS_INFO: { color: "bg-sky-50 text-sky-700 border-sky-200", Icon: HelpCircle },
 };
 
 export default function DecisionBadge({ decision }: Props) {
   if (!decision) return null;
-  const color = COLORS[decision] || "bg-gray-100 text-gray-800 border-gray-300";
+  const { color, Icon } = CONFIG[decision] || { color: "bg-slate-50 text-slate-700 border-slate-200", Icon: HelpCircle };
   return (
-    <span className={`inline-block px-3 py-1 text-xs font-semibold rounded-full border ${color}`}>
+    <span className={`inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full border ${color}`}>
+      <Icon size={12} />
       {decision}
     </span>
   );

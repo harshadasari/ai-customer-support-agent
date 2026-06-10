@@ -105,18 +105,48 @@ All three saved in `docs/`:
 
 ---
 
-### Session 2 — Doc Refinement (01:43 – 02:00)
+### Session 2 — Deep Doc Review, Package Research & Execution Plan (01:43 – 02:30)
 
-#### 2.1 Reviewed and Updated All 3 Docs
-- **What:** Cross-checked docs against original challenge requirements and updated for accuracy.
-- **Changes made:**
-  - Pinned package versions to latest stable: LangGraph 1.2+, FastAPI 0.136+, Pydantic 2.13+, React 19, Tailwind v4, `uv` as package manager
-  - Rewrote LangGraph code to use correct modern API: `ToolNode`, `tools_condition`, `MessagesState`, `START` constant
-  - Fixed `TRACE_STORE` reference in API endpoints
-  - Added injectable `now` parameter to eligibility engine for testability
-  - Added `/health` endpoint to FastAPI
-  - Clarified R6 rule (damaged/defective exception) with explicit conditions
-  - Updated model IDs (e.g., `claude-haiku-4-5-20251001` replaces `claude-3-5-haiku-latest`)
+#### 2.1 Comprehensive Doc Review
+- **What:** Line-by-line review of all 3 docs against original challenge brief.
+- **Findings:**
+  - Doc 1: R6 underspecified, `Order` model has redundant refund fields
+  - Doc 2: Strongest doc. "Separate judgment from decision" is the winning insight
+  - Doc 3: LangGraph code used deprecated API, package versions outdated, `TRACE_STORE` undefined, `datetime.now()` untestable, no `/health` endpoint, CORS too permissive
+
+#### 2.2 Parallel Package Research (5 Agents)
+- **What:** Launched 5 research agents simultaneously to verify latest versions of all tech.
+- **Key findings:**
+
+| Category | Old (in docs) | Current |
+|---|---|---|
+| LangGraph | 0.2, manual API | **1.2.4** — `ToolNode`, `tools_condition`, `MessagesState`, `START` |
+| FastAPI | >=0.111 | **0.136.3** |
+| Pydantic | >=2.7 | **2.13.4** |
+| Tailwind | v3 (config files) | **v4.3.0** — no config files, `@tailwindcss/vite` plugin |
+| React | unversioned | **19.2.6** |
+| Vite | unversioned | **8.0.3** |
+| Claude model | `claude-3-5-haiku-latest` | `claude-haiku-4-5-20251001` (old alias deprecated) |
+| OpenAI model | `gpt-4o-mini` | Still valid, cheapest for tool-calling |
+| Python pkg mgr | pip | **uv** (user preference) |
+
+#### 2.3 Updated All 3 Planning Documents
+- **Doc 3 — 12 major changes:** LangGraph rewrite (ToolNode/tools_condition/MessagesState), `@tool` decorator, injectable `now` param, `TRACE_STORE` defined, `/api/health` added, CORS locked, `uv`+`pyproject.toml`, Tailwind v4, pinned versions
+- **Doc 2 — 2 changes:** version refs, model IDs for cost-routing
+- **Doc 1 — 3 changes:** R6 explicit, deterministic check column, CORS note
+
+#### 2.4 Evaluated Build Approaches
+- **Researched:** Ralph Loop plugin (in-session), external Ralph CLI (frankbria/ralph-claude-code), Superpowers skills, hybrid
+- **Decision:** Hybrid — Ralph Loop grinds each phase, Superpowers reviews after
+- **User choices:** Phase 2 uses Ralph + heavy review (not interactive TDD), `uv` not `pip`
+
+#### 2.5 Created Execution Plan
+- **Plan file:** `.claude/plans/fuzzy-zooming-platypus.md`
+- **Structure:** 8 build phases + Loom recording phase
+- **Pattern per phase:** `/ralph-loop` → `/superpowers:requesting-code-review` → fix → `/superpowers:verification-before-completion` → commit
+- **Each phase has copy-paste `/ralph-loop` command** with detailed prompt, max iterations, and completion promise
+- **Total estimate:** ~4.5 hours
+- **Plan approved by user**
 
 ---
 
@@ -317,24 +347,26 @@ AI Customer Support/
 
 ## What's Next (remaining work)
 
-| Phase | Task | Status |
-|---|---|---|
-| Phase 0 — Scaffold | Repo structure, venv, requirements, configs | ✅ Done |
-| Phase 1 — Seed Data | 15 customers + orders JSON, refund policy, seed_db.py | ✅ Done |
-| Phase 2 — Eligibility Engine | Deterministic R1–R6 engine + unit tests | ✅ Built, needs test run |
-| Phase 3 — Tools | 6 tools with JSON schemas + guards | ✅ Built |
-| Phase 4 — Agent Loop | LangGraph + hardened prompt + LLM wrapper | ✅ Built, needs integration test |
-| Phase 5 — Tracing + API | TraceStep capture, FastAPI endpoints | ✅ Built, needs integration test |
-| Phase 6 — Frontend | React chat + admin dashboard | ✅ Built, needs visual polish |
-| Phase 7 — Testing + Polish | Adversarial tests, README, edge-case fixes | 🔲 Pending |
-| Phase 8 — Loom | Record ≤5 min walkthrough | 🔲 Pending |
+**Execution plan approved.** All phases use Ralph Loop plugin + Superpowers review.
 
-**Immediate priorities:**
-1. Run `test_eligibility.py` — verify deterministic engine passes all edge cases.
-2. Run the backend (`uvicorn`) and confirm `/api/chat` works end-to-end.
-3. Run the frontend (`npm run dev`) and test chat + admin dashboard visually.
-4. Run adversarial tests against the live agent.
-5. Polish UI, fix any bugs, record Loom.
+| Phase | Task | Method | Status |
+|---|---|---|---|
+| Prerequisites | git init | Manual | 🔲 Next |
+| Phase 0 — Scaffold | Repo structure, uv, npm, configs | Ralph Loop | 🔲 Pending |
+| Phase 1 — Seed Data | 15 customers + orders JSON, refund policy, SQLite | Ralph Loop | 🔲 Pending |
+| Phase 2 — Eligibility Engine | Deterministic R1–R6 engine + unit tests | Ralph Loop + **heavy** review | 🔲 Pending |
+| Phase 3 — Tools | 7 @tool functions with guards | Ralph Loop | 🔲 Pending |
+| Phase 4 — Agent Loop | LangGraph + hardened prompt + LLM wrapper | Ralph Loop | 🔲 Pending |
+| Phase 5 — Tracing + API | TraceStep capture, FastAPI endpoints | Ralph Loop | 🔲 Pending |
+| Phase 6 — Frontend | React chat + admin dashboard | Ralph Loop + interactive polish | 🔲 Pending |
+| Phase 7 — Testing + Polish | Adversarial tests, README, edge-case fixes | Interactive | 🔲 Pending |
+| Phase 8 — Loom | Record ≤5 min walkthrough | Manual | 🔲 Pending |
+
+> **Note:** Previous sessions (Session 3) built initial code, but this execution plan
+> will rebuild from scratch using the updated docs with correct package versions,
+> LangGraph API, and Tailwind v4. Ralph Loop handles the grind, Superpowers reviews quality.
+
+**Immediate next step:** `git init` → Phase 0 Ralph Loop
 
 ---
 
@@ -342,8 +374,33 @@ AI Customer Support/
 
 | Tool | Type | URL | Relevance |
 |---|---|---|---|
-| **Ralph Loop** | Autonomous dev loop for Claude Code | github.com/frankbria/ralph-claude-code | Can import PRD → auto-build |
-| **Superpowers** | Skills framework (Claude/Cursor/Gemini) | github.com/obra/superpowers | TDD-first + subagent dev |
-| **Claude Task Master** | PRD → task tree decomposer | github.com/eyaltoledano/claude-task-master | Granular task management |
+| **Ralph Loop Plugin** | In-session autonomous dev loop | Built-in Claude Code plugin | **CHOSEN** — `/ralph-loop` command |
+| **Ralph CLI** | External autonomous dev loop | github.com/frankbria/ralph-claude-code | Researched, not used (plugin simpler) |
+| **Superpowers** | Skills framework (Claude/Cursor/Gemini) | github.com/obra/superpowers | **CHOSEN** — code review + verification |
+| **Claude Task Master** | PRD → task tree decomposer | github.com/eyaltoledano/claude-task-master | Evaluated, not used |
 | **Firebase Studio** | Browser-based full-stack builder | firebase.studio | Fast prototyping, less control |
 | **Bolt.new / Lovable / V0** | Browser SPA builders | bolt.new / lovable.dev / v0.dev | Fast frontend, weak backend |
+
+## Package Version Research (June 2026)
+
+| Package | Version | Notable Changes |
+|---|---|---|
+| LangGraph | 1.2.4 | Post-1.0 stable. `ToolNode`, `tools_condition`, `MessagesState` prebuilt. `MessageGraph` removed. |
+| FastAPI | 0.136.3 | Pydantic v2 required since 0.100+ |
+| Pydantic | 2.13.4 | v2 migration: `.dict()`→`.model_dump()`, `@validator`→`@field_validator` |
+| SQLModel | 0.0.38 | Requires Pydantic v2 |
+| langchain-core | 1.4.3 | Dropped Pydantic v1. `@tool` decorator for schema generation |
+| langchain-openai | 1.3.0 | `ChatOpenAI.bind_tools()` native; old `functions` kwarg removed |
+| langchain-anthropic | 1.4.4 | `ChatAnthropic.bind_tools()` + `.with_structured_output()` |
+| OpenAI SDK | 2.41.0 | Client-based API (`openai.OpenAI()`) |
+| Anthropic SDK | 0.109.1 | `anthropic.Anthropic()` client |
+| React | 19.2.6 | React 19 stable |
+| Vite | 8.0.3 | Node 18+ required |
+| Tailwind CSS | 4.3.0 | **No config files.** `@import "tailwindcss"` + `@tailwindcss/vite` plugin |
+| TypeScript | 6.0.1 | — |
+| pytest | 9.0.3 | Removed legacy `pytest.warns(None)` |
+| tenacity | 9.1.4 | Dropped Python 3.7 |
+| httpx | 0.28.1 | Use `ASGITransport(app=...)` for testing |
+| `gpt-4o-mini` | Still valid | Cheapest OpenAI model for tool-calling |
+| `claude-haiku-4-5-20251001` | Current | Cheapest Anthropic ($1/$5 per MTok) |
+| `claude-3-5-haiku-latest` | **Deprecated** | Use `claude-haiku-4-5-20251001` instead |

@@ -1,10 +1,30 @@
+# Python
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
-.env
-.env.*
 *.egg-info/
 dist/
 build/
+.pytest_cache/
+
+# Environment (keep .env.example)
+.env
+!.env.example
+
+# Node
+node_modules/
+
+# IDE
 .DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Claude/Devin local state
+.claude/ralph-loop.local.md
+backend/.claude/
+
+# Build artifacts
+guide/app/dist/

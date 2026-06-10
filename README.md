@@ -5,40 +5,129 @@ An AI-powered customer support agent that autonomously processes refund requests
 ## Architecture
 
 ```
-Data → Engine → Tools → Agent (LangGraph) → API (FastAPI) → UI (React/Tailwind)
+User → React UI → FastAPI → LangGraph Agent → Tools → Eligibility Engine → Response
+                                                          ↑
+                                               Deterministic Python code
+                                               (verdict cannot be overridden)
 ```
 
 **Key principle:** The LLM handles language and orchestration. The **verdict (APPROVE/DENY/ESCALATE) is computed by deterministic Python code** that cannot be overridden by prompt injection.
 
-## Quick Start
+---
 
-### Backend
+## Prerequisites
+
+- **Python 3.12+**
+- **Node.js 18+**
+- **uv** (Python package manager) — install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+- **An LLM API key** (OpenAI or Anthropic)
+
+---
+
+## Setup (after cloning)
+
+### 1. Clone the repo
+
+```bash
+git clone <your-repo-url>
+cd "AI Customer Support"
+```
+
+### 2. Backend setup
 
 ```bash
 cd backend
-source ../venv/bin/activate
-cp .env.example .env          # Add your LLM API key
-python scripts/seed_db.py     # Verify seed data
-uvicorn app.main:app --reload
+
+# Install Python dependencies with uv (creates .venv automatically)
+uv sync
+
+# Copy environment config and add your API key
+cp .env.example .env
+# Edit .env → set OPENAI_API_KEY=sk-... (or ANTHROPIC_API_KEY)
+
+# Verify seed data loads correctly
+uv run python scripts/seed_db.py
+
+# Start the backend server
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### Frontend
+The backend runs at **http://localhost:8000**. Verify: `curl http://localhost:8000/api/health`
+
+### 3. Frontend setup
+
+Open a new terminal:
 
 ```bash
 cd frontend
+
+# Install Node dependencies
+npm install
+
+# Start the dev server
+npm run dev
+```
+
+The frontend runs at **http://localhost:5173**. It proxies `/api` requests to the backend automatically.
+
+### 4. Open the app
+
+Go to **http://localhost:5173** in your browser.
+
+- **Chat tab** — customer-facing chat for refund requests
+- **Admin tab** — trace dashboard showing tool I/O, latency, tokens
+
+### 5. Run tests
+
+```bash
+cd backend
+uv run pytest tests/ -v
+```
+
+All 71 tests should pass.
+
+---
+
+## Learning Guide
+
+An interactive learning portal is included for anyone new to AI/LLM concepts.
+
+### React app (recommended)
+
+```bash
+cd guide/app
 npm install
 npm run dev
 ```
 
-Open http://localhost:5173
+Open **http://localhost:3000**
 
-### Tests
+### Static HTML (no setup needed)
 
 ```bash
-cd backend
-source ../venv/bin/activate
-python -m pytest tests/ -v
+open guide/index.html
 ```
+
+### Topics covered
+
+| # | Chapter | Category |
+|---|---|---|
+| 1 | What is AI? | Core Concept |
+| 2 | How LLMs Work | Core Concept |
+| 3 | Tool Calling | Core Concept |
+| 4 | Agent Loops | Core Concept |
+| 5 | Prompt Engineering | Core Concept |
+| 6 | Deterministic Engines | Core Concept |
+| 7 | Tracing & Observability | Core Concept |
+| 8 | Project Architecture | Walkthrough |
+| 9 | FastAPI | Tech Reference |
+| 10 | LangGraph | Tech Reference |
+| 11 | LangChain Tools | Tech Reference |
+| 12 | Pydantic | Tech Reference |
+| 13 | React & Tailwind | Tech Reference |
+| 14 | Defense in Depth | Tech Reference |
+
+---
 
 ## Environment Variables
 
@@ -46,9 +135,13 @@ python -m pytest tests/ -v
 |---|---|---|
 | `LLM_PROVIDER` | `openai` | `openai` or `anthropic` |
 | `OPENAI_API_KEY` | — | Required if using OpenAI |
-| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model |
+| `OPENAI_MODEL` | `gpt-4o-mini` | OpenAI model ID |
 | `ANTHROPIC_API_KEY` | — | Required if using Anthropic |
-| `ANTHROPIC_MODEL` | `claude-haiku-4-5-20251001` | Anthropic model |
+| `ANTHROPIC_MODEL` | `claude-haiku-4-5-20251001` | Anthropic model ID |
+| `REFUND_WINDOW_DAYS` | `30` | Refund eligibility window |
+| `ESCALATION_THRESHOLD` | `500` | Amount requiring human approval |
+
+---
 
 ## Policy Rules
 
@@ -61,11 +154,69 @@ python -m pytest tests/ -v
 | R5 | Already refunded | DENIED |
 | R6 | Damaged overrides R1 | APPROVED (if other rules pass) |
 
+---
+
 ## Seed Data Edge Cases
 
-- **CUST-001/ORD-1002**: Final sale item (R1)
-- **CUST-002/ORD-2001**: >$500 order (R2)
-- **CUST-003/ORD-3001**: Out of refund window (R3)
-- **CUST-004/ORD-4001**: Already refunded (R5)
-- **CUST-006/ORD-6001**: Damaged + final sale (R6 override)
-- **CUST-011/ORD-11001**: >$500 order (R2)
+| Customer | Order | Edge Case |
+|---|---|---|
+| CUST-001 / Alice | ORD-1002 | Final sale item (R1) |
+| CUST-002 / Bob | ORD-2001 | $529.98 order (R2 escalation) |
+| CUST-003 / Carol | ORD-3001 | Delivered >30 days ago (R3) |
+| CUST-004 / David | ORD-4001 | Already refunded (R5) |
+| CUST-006 / Frank | ORD-6001 | Damaged + final sale (R6 override) |
+| CUST-011 / Karen | ORD-11001 | $650 order (R2 escalation) |
+
+---
+
+## Project Structure
+
+```
+AI Customer Support/
+├── backend/
+│   ├── app/
+│   │   ├── main.py                # FastAPI app + routes
+│   │   ├── models.py              # Pydantic models
+│   │   ├── db.py                  # In-memory JSON data store
+│   │   ├── config.py              # Env-driven settings
+│   │   ├── agent/
+│   │   │   ├── graph.py           # LangGraph agent loop
+│   │   │   ├── llm.py             # Swappable LLM client
+│   │   │   └── prompts.py         # Hardened system prompt
+│   │   ├── engine/
+│   │   │   └── eligibility.py     # Deterministic verdict engine
+│   │   ├── policy/
+│   │   │   └── refund_policy.md   # Rules R1-R6
+│   │   ├── tools/
+│   │   │   └── tools.py           # 7 LangChain tools
+│   │   └── trace/
+│   │       └── tracer.py          # TraceStep capture
+│   ├── data/seed/
+│   │   └── customers.json         # 15 customers + orders
+│   ├── tests/                     # 71 tests
+│   ├── pyproject.toml             # uv-managed dependencies
+│   └── uv.lock                    # Locked dependency versions
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx                # Tab nav (Chat / Admin)
+│   │   ├── api.ts                 # Typed API client
+│   │   └── components/            # ChatWindow, AdminDashboard, etc.
+│   ├── vite.config.ts
+│   └── package.json
+├── guide/                         # Learning portal
+│   ├── content/                   # 14 markdown chapters
+│   ├── app/                       # React learning app (port 3000)
+│   └── index.html                 # Static HTML fallback
+├── docs/                          # Requirements + design docs
+└── README.md                      # This file
+```
+
+---
+
+## Loom Recording Script (≤ 5 min)
+
+1. **(0:00–0:45)** Architecture: Data → Engine → Tools → Agent → API → UI
+2. **(0:45–2:00)** Happy path: valid refund → APPROVED → trace timeline
+3. **(2:00–3:00)** Resilience: prompt injection + >$500 → DENIED/ESCALATED
+4. **(3:00–4:00)** Trace deep-dive: tool I/O, latency, tokens
+5. **(4:00–5:00)** What I'd add before prod
