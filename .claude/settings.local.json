@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm view *)",
+      "Bash(wait)",
+      "Bash(gh repo *)",
+      "WebSearch",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}
